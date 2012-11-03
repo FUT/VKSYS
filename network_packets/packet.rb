@@ -44,7 +44,7 @@ class Packet
         counter -= 1 if counter > 0
 
         if data[-7..-1] == '1111101' && counter = 0
-          data[-2..-2] = ''
+          data[-2] = ''
           counter = 5
         end
 

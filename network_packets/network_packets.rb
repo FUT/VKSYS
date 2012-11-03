@@ -3,7 +3,7 @@ require 'packet'
 require 'printer'
 
 Shoes.app(height: 900, width: 1400) do
-  MESSAGE_LENGTH = 16
+  MESSAGE_LENGTH = 21
 
   @message = edit_box height: 50, width: 1400 do |e|
     if e.text.size == MESSAGE_LENGTH
@@ -12,7 +12,7 @@ Shoes.app(height: 900, width: 1400) do
       @packets.para '%18s' % e.text, margin: 0, font: 'courier', weight: 'heavy'
       @packets.para "\n\n"
 
-      decoded = Packet.decode encoded.join
+      decoded = Packet.decode encoded
       @decoded.para decoded, margin: 0
 
       @message.text = ''

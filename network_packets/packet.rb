@@ -14,7 +14,8 @@ class Packet
 
     private
     def packed_data(message)
-      [start_stop_byte, receiver, transmitter, encoded_message(message), crc(message), start_stop_byte]
+      data = [receiver, transmitter, encoded_message(message), crc(message)].join.gsub '11111', '111110'
+      [start_stop_byte, data, start_stop_byte].join
     end
 
     def start_stop_byte
@@ -22,7 +23,7 @@ class Packet
     end
 
     def receiver
-      '%08b' % rand(256)
+      '11111111' # '%08b' % rand(256)
     end
 
     def transmitter
@@ -34,13 +35,23 @@ class Packet
     end
 
     def encoded_message(message)
-      encoded = message.split(//).map { |c| c.unpack 'b8' }.join.gsub '11111', '111110'
-      encoded << '0' * (8 * DATA_LENGTH - encoded.length)
+      message.split(//).map { |c| c.unpack 'b8' }.join
     end
 
     def decoded_message(message)
-      bytes = message[24..(24 + 8 * DATA_LENGTH)].gsub('1111101', '111111').scan(/.{8}/).reject { |b| b == '00000000' }
-      bytes.pack 'b8' * bytes.count
+      counter = 0 # steps after last bit stuffing found
+      bytes = message[8...-8].split(//).inject('') do |data, bit|
+        counter -= 1 if counter > 0
+
+        if data[-7..-1] == '1111101' && counter = 0
+          data[-2..-2] = ''
+          counter = 5
+        end
+
+        data << bit
+      end
+
+      bytes[16...(16 + DATA_LENGTH * 8)].scan(/.{8}/).pack 'b8' * DATA_LENGTH
     end
   end
 end

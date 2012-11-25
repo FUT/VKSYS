@@ -1,5 +1,6 @@
 require 'pry'
 require 'packet'
+require 'crc16'
 require 'printer'
 
 Shoes.app(height: 900, width: 1400) do
@@ -14,13 +15,14 @@ Shoes.app(height: 900, width: 1400) do
 
       decoded = Packet.decode encoded
       @decoded.para decoded, margin: 0
+      @decoded.para (Packet.valid?(encoded) ? '[VALID]' : '[ERROR]'), margin: 0, stroke: rgb(128,0,0)
 
       @message.text = ''
     end
   end
 
-  @packets = flow height: 650, width: 1400
-  @decoded = flow height: 200, width: 1400
+  @packets = flow height: 650, width: 1400, scroll: true
+  @decoded = flow height: 200, width: 1400, scroll: true
 
   [@packets, @decoded].each { |el| el.border black }
 

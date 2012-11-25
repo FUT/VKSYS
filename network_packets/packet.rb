@@ -1,5 +1,3 @@
-require 'digest/crc16'
-
 class Packet
   DATA_LENGTH = 21
 
@@ -12,10 +10,22 @@ class Packet
       decoded_message message
     end
 
+    def valid?(message)
+      decoded = decode_data message
+      CRC16.encode(decoded[16...-16]) == decoded[-16..-1].to_i(2)
+    end
+
     private
     def packed_data(message)
-      data = [receiver, transmitter, encoded_message(message), crc(message)].join.gsub '11111', '111110'
-      [start_stop_byte, data, start_stop_byte].join
+      data_with_crc = encoded_message(message) + crc(encoded_message(message))
+      inject_error data_with_crc
+
+      stuffed_data = [receiver, transmitter, data_with_crc].join.gsub '11111', '111110'
+      [start_stop_byte, stuffed_data, start_stop_byte].join
+    end
+
+    def inject_error(message)
+      message[rand message.size] = '1'
     end
 
     def start_stop_byte
@@ -31,15 +41,19 @@ class Packet
     end
 
     def crc(message)
-      Digest::CRC16.digest(message).bytes.map { |byte| '%08b' % byte }.join
+      '%016b' % CRC16.encode(message)
     end
 
     def encoded_message(message)
       message.split(//).map { |c| c.unpack 'b8' }.join
     end
 
+    def decode_data(data)
+      data[8...-8].gsub '111110', '11111'
+    end
+
     def decoded_message(message)
-      message[8..-8].gsub('111110', '11111')[16...(16 + DATA_LENGTH * 8)].scan(/.{8}/).pack 'b8' * DATA_LENGTH
+      decode_data(message)[16...(16 + DATA_LENGTH * 8)].scan(/.{8}/).pack 'b8' * DATA_LENGTH
     end
   end
 end

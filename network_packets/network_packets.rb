@@ -23,4 +23,11 @@ Shoes.app(height: 900, width: 1400) do
   @decoded = flow height: 200, width: 1400
 
   [@packets, @decoded].each { |el| el.border black }
+
+  keypress do |e|
+    if e == :escape
+      @message.text = ''
+      [@packets, @decoded].each { |container| container.children[1..-1].each(&:remove) }
+    end
+  end
 end

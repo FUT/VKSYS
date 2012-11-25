@@ -39,19 +39,7 @@ class Packet
     end
 
     def decoded_message(message)
-      counter = 0 # steps after last bit stuffing found
-      bytes = message[8...-8].split(//).inject('') do |data, bit|
-        counter -= 1 if counter > 0
-
-        if data[-7..-1] == '1111101' && counter = 0
-          data[-2] = ''
-          counter = 5
-        end
-
-        data << bit
-      end
-
-      bytes[16...(16 + DATA_LENGTH * 8)].scan(/.{8}/).pack 'b8' * DATA_LENGTH
+      message[8..-8].gsub('111110', '11111')[16...(16 + DATA_LENGTH * 8)].scan(/.{8}/).pack 'b8' * DATA_LENGTH
     end
   end
 end

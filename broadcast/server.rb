@@ -2,51 +2,45 @@ require 'cod'
 require 'pry'
 
 time_server_channel = Cod.tcp_server('localhost:44446')
-clients = []
+@clients = []
 
 def dest(channel)
   channel.instance_eval('@destination').split(':').last
 end
 
+def respond(message, ports = [])
+  @clients.each do |client|
+    client.interact ['append', message] if !block_given? || yield(dest(client))
+  end
+end
+
+def close_ports(port)
+  available_ports = @clients.map { |client| dest(client) }.sort
+  port_index = available_ports.index(port.to_s).to_i
+  max = available_ports.length
+  near = [available_ports[(port_index - 1) % max], available_ports[(port_index + 1) % max]].compact
+end
+
 loop do
-  (mode, ports, message), client_channel = time_server_channel.get_ext
-  puts mode, ports, message
+  (mode, ports, message, client_port), client_channel = time_server_channel.get_ext
+  puts "[FROM #{client_port}] Mode #{mode} Message #{message}"
 
   case mode
   when 'connect'
-    clients << Cod.tcp("localhost:#{message}")
+    @clients << Cod.tcp("localhost:#{message}")
     puts "Client on port #{message} connected"
-    client_channel.put Time.now
 
   when 'unicast'
-    client_channel.put Time.now
-    clients.each do |client|
-      client.interact ['append', message] if dest(client) == ports.first
-    end
+    respond(message) { |port| port == ports.first }
   when 'multicast'
-    client_channel.put Time.now
-    clients.each do |client|
-      client.interact ['append', message] if dest(client).in? ports
-    end
-
+    respond(message) { |port| ports.include? port }
   when 'broadcast'
-    client_channel.put Time.now
-    clients.each do |client|
-      client.interact ['append', message]
-    end
-
+    respond(message)
   when 'anycast'
-    available_ports = clients.map { |client| dest(client) }.sort
-    current_port_index = available_ports.index dest(client_channel)
-    near = [available_ports[current_port_index - 1], availabe_ports[current_port_index + 1]]
-
-    client_channel.put Time.now
-    clients.each do |client|
-      client.interact ['append', message] if dest(client).in? near
-    end
-
+    respond(message) { |port| close_ports(client_port).include? port }
   else
     puts 'ERROR! UNKNOWN REQUEST!'
-    client_channel.put 'Unknown request!'
   end
+
+  client_channel.put Time.now
 end

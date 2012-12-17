@@ -18,7 +18,7 @@ Shoes.app title: PORT.to_s, width: 400 do
 
   MODES.each do |mode|
     button mode do
-      $channel.interact [mode, @ports.text.split(' '), @message_line.text]
+      $channel.interact [mode, @ports.text.split(' '), @message_line.text, PORT]
       @message_line.text = ''
     end
   end
@@ -27,7 +27,6 @@ Shoes.app title: PORT.to_s, width: 400 do
     local_server = Cod.tcp_server("localhost:#{PORT}")
     loop do
       (mode, message), server_channel = local_server.get_ext
-      puts mode, message
 
       case mode
       when 'append'

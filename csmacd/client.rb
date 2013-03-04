@@ -20,7 +20,7 @@ end
 
 def wait
   time = rand(2000) / 1000.0
-  p "Waiting for #{time} msec"
+  $info.para "[BUSY] Waiting for #{time} msec\n"
   sleep time
 end
 
@@ -29,7 +29,7 @@ def send(message)
   message = message.split ''
   while !message.empty?
     wait while channel_busy?
-    p "[#{PORT}] #{message.first} was sent"
+    $info.para "[SEND] #{message.first} was sent\n"
     $channel.interact ["send #{PORT}", message.shift]
   end
 end
@@ -37,13 +37,15 @@ end
 Shoes.app title: "Client", width: 400 do
   para 'Message      '
   @message_line = edit_line width: 300
-  @messages = flow width: 400, height: 250, scroll: true
 
   button 'Send', height: 40 do
     text = @message_line.text
     Thread.new { send text }
     @message_line.text = ''
   end
+
+  @messages = flow width: 400, height: 250, scroll: true
+  $info = flow width: 400, height: 250, scroll: true
 
   Thread.new do
     local_server = Cod.tcp_server("localhost:#{PORT}")

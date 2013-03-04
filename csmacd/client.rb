@@ -9,11 +9,11 @@ $channel.interact ['connect', PORT]
 
 def channel_busy?
   Array.new(2).map do
+    sleep 0.25
     mode, busy = $channel.interact ['busy?', PORT]
-    sleep 0.10
     p busy.class
     break [false] if busy.is_a?(Array)
-    sleep 0.15
+    sleep 0.25
     busy
   end.any?
 end
@@ -25,10 +25,11 @@ def wait
 end
 
 def send(message)
+  # p "Sending #{message}"
   message = message.split ''
   while !message.empty?
     wait while channel_busy?
-    p "#{message.first} was sent"
+    p "[#{PORT}] #{message.first} was sent"
     $channel.interact ["send #{PORT}", message.shift]
   end
 end
@@ -39,7 +40,8 @@ Shoes.app title: "Client", width: 400 do
   @messages = flow width: 400, height: 250, scroll: true
 
   button 'Send', height: 40 do
-    send @message_line.text
+    text = @message_line.text
+    Thread.new { send text }
     @message_line.text = ''
   end
 
@@ -48,7 +50,7 @@ Shoes.app title: "Client", width: 400 do
     loop do
       (mode, message), server_channel = local_server.get_ext
 
-      p "Client #{PORT} received: [mode] #{mode} [message] #{message}"
+      # p "Client #{PORT} received: [mode] #{mode} [message] #{message}"
       case mode
       when 'append'
         @messages.para message

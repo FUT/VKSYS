@@ -7,16 +7,16 @@ time_server_channel = Cod.tcp_server('localhost:44456')
 @last_port = -1
 
 def busy?
-  (Time.now.to_f - @last_message_time < 0.5)
+  (Time.now.to_f - @last_message_time < 2)
 end
 
 def update_post_time
-  @list_message_time = Time.now.to_f
+  @last_message_time = Time.now.to_f
 end
 
 loop do
   (mode, message), client_channel = time_server_channel.get_ext
-  puts "Mode #{mode} Message #{message}"
+  # puts "Mode #{mode} Message #{message}"
 
   case mode.split.first
   when 'connect'
@@ -25,7 +25,7 @@ loop do
     puts "Client on port #{message} connected"
     client_channel.put Time.now
   when 'busy?'
-    p 'TEST', message, @last_port
+    p message, @last_port
     if (message.to_s == @last_port.to_s)
       client_channel.put ['busy?', [true]]
     else
